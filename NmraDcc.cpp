@@ -1024,23 +1024,8 @@ void processMultiFunctionMessage (uint16_t Addr, DCC_ADDR_TYPE AddrType, uint8_t
 
     uint8_t  CmdMasked = Cmd & 0b11100000 ;
 
-    // If we are an Accessory Decoder
-    if (DccProcState.Flags & FLAGS_DCC_ACCESSORY_DECODER)
-    {
-        // and this isn't an Ops Mode Write or we are NOT faking the Multifunction Ops mode address in CV 33+34 or
-        // it's not our fake address, then return
-        if ( (CmdMasked != 0b11100000) || (DccProcState.OpsModeAddressBaseCV == 0))
-            return ;
-
-        uint16_t FakeOpsAddr = readCV (DccProcState.OpsModeAddressBaseCV) | (readCV (DccProcState.OpsModeAddressBaseCV + 1) << 8) ;
-        uint16_t OpsAddr = Addr & 0x3FFF ;
-
-        if (OpsAddr != FakeOpsAddr)
-            return ;
-    }
-
     // We are looking for FLAGS_MY_ADDRESS_ONLY but it does not match and it is not a Broadcast Address then return
-    else if ( (DccProcState.Flags & FLAGS_MY_ADDRESS_ONLY) && (Addr != getMyAddr()) && (Addr != 0))
+    if ( (DccProcState.Flags & FLAGS_MY_ADDRESS_ONLY) && (Addr != getMyAddr()) && (Addr != 0))
         return ;
 
     switch (CmdMasked)
@@ -1181,6 +1166,22 @@ void processMultiFunctionMessage (uint16_t Addr, DCC_ADDR_TYPE AddrType, uint8_t
         break;
 
     case 0b11100000:  // CV Access
+
+        // If we are an Accessory Decoder
+        if (DccProcState.Flags & FLAGS_DCC_ACCESSORY_DECODER)
+        {
+            // and we are NOT faking the Multifunction Ops mode address in CV 33+34 or
+            // it's not our fake address, then return
+            if (DccProcState.OpsModeAddressBaseCV == 0)
+                return ;
+            uint16_t FakeOpsAddr = readCV (DccProcState.OpsModeAddressBaseCV) | (readCV (DccProcState.OpsModeAddressBaseCV + 1) << 8) ;
+            uint16_t OpsAddr = Addr & 0x3FFF ;
+
+            if (OpsAddr != FakeOpsAddr)
+                return ;
+
+        }
+
         CVAddr = ( ( (Cmd & 0x03) << 8) | Data1) + 1 ;
 
         processDirectCVOperation (Cmd, CVAddr, Data2, ackAdvancedCV) ;
