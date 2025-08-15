@@ -1443,25 +1443,20 @@ void execDccProcessor (DCC_MSG * pDccMsg)
 
                     if (DccProcState.inAccDecDCCAddrNextReceivedMode)
                     {
-                        if (DccProcState.Flags & FLAGS_OUTPUT_ADDRESS_MODE)
-                        {
-                            DB_PRINT ("eDP: Set OAddr:%d", OutputAddress);
-                            //uint16_t storedOutputAddress = OutputAddress + 1; // The value stored in CV1 & 9 for Output Addressing Mode is + 1
-                            writeCV (CV_ACCESSORY_DECODER_ADDRESS_LSB, (uint8_t) (OutputAddress % 256));
-                            writeCV (CV_ACCESSORY_DECODER_ADDRESS_MSB, (uint8_t) (OutputAddress / 256));
+                        DB_PRINT ("eDP: Set OAddr:%d", OutputAddress);
+                        //uint16_t storedOutputAddress = OutputAddress + 1; // The value stored in CV1 & 9 for Output Addressing Mode is + 1
+                        writeCV (CV_ACCESSORY_DECODER_ADDRESS_LSB, (uint8_t) (OutputAddress % 256));
+                        writeCV (CV_ACCESSORY_DECODER_ADDRESS_MSB, (uint8_t) (OutputAddress / 256));
 
-                            if (notifyDccAccOutputAddrSet)
-                                notifyDccAccOutputAddrSet (OutputAddress);
-                        }
-                        else
-                        {
-                            DB_PRINT ("eDP: Set BAddr:%d", BoardAddress);
-                            writeCV (CV_ACCESSORY_DECODER_ADDRESS_LSB, (uint8_t) (BoardAddress % 64));
-                            writeCV (CV_ACCESSORY_DECODER_ADDRESS_MSB, (uint8_t) (BoardAddress / 64));
+                        if (notifyDccAccOutputAddrSet)
+                            notifyDccAccOutputAddrSet (OutputAddress);
+                            
+                        DB_PRINT ("eDP: Set BAddr:%d", BoardAddress);
+                        writeCV (CV_ACCESSORY_DECODER_ADDRESS_LSB, (uint8_t) (BoardAddress % 64));
+                        writeCV (CV_ACCESSORY_DECODER_ADDRESS_MSB, (uint8_t) (BoardAddress / 64));
 
-                            if (notifyDccAccBoardAddrSet)
-                                notifyDccAccBoardAddrSet (BoardAddress);
-                        }
+                        if (notifyDccAccBoardAddrSet)
+                            notifyDccAccBoardAddrSet (BoardAddress);
 
                         DccProcState.inAccDecDCCAddrNextReceivedMode = 0; // Reset the mode now that we have set the address
                     }
@@ -1469,22 +1464,16 @@ void execDccProcessor (DCC_MSG * pDccMsg)
                     // If we're filtering addresses, does the address match our address or is it a broadcast address? If NOT then return
                     if (DccProcState.Flags & FLAGS_MY_ADDRESS_ONLY)
                     {
-                        if (DccProcState.Flags & FLAGS_OUTPUT_ADDRESS_MODE)
+                        DB_PRINT (" AddrChk: OAddr:%d, BAddr:%d, myAddr:%d Chk=%d", OutputAddress, BoardAddress, getMyAddr(), OutputAddress != getMyAddr());
+                        if (OutputAddress != getMyAddr()  &&  OutputAddress < 2045)
                         {
-                            DB_PRINT (" AddrChk: OAddr:%d, BAddr:%d, myAddr:%d Chk=%d", OutputAddress, BoardAddress, getMyAddr(), OutputAddress != getMyAddr());
-                            if (OutputAddress != getMyAddr()  &&  OutputAddress < 2045)
-                            {
-                                DB_PRINT (" eDP: OAddr:%d, myAddr:%d - no match", OutputAddress, getMyAddr());
-                                return;
-                            }
+                            DB_PRINT (" eDP: OAddr:%d, myAddr:%d - no match", OutputAddress, getMyAddr());
+                            return;
                         }
-                        else
+                        if ( (BoardAddress != getMyAddr()) && (BoardAddress < 511))
                         {
-                            if ( (BoardAddress != getMyAddr()) && (BoardAddress < 511))
-                            {
-                                DB_PRINT (" eDP: BAddr:%d, myAddr:%d - no match", BoardAddress, getMyAddr());
-                                return;
-                            }
+                            DB_PRINT (" eDP: BAddr:%d, myAddr:%d - no match", BoardAddress, getMyAddr());
+                            return;
                         }
                         DB_PRINT ("eDP: Address Matched");
                     }
@@ -1513,18 +1502,12 @@ void execDccProcessor (DCC_MSG * pDccMsg)
                         if (notifyDccAccState)
                             notifyDccAccState (OutputAddress, BoardAddress, pDccMsg->Data[1] & 0b00000111, outputPower);
 
-                        if (DccProcState.Flags & FLAGS_OUTPUT_ADDRESS_MODE)
-                        {
-                            DB_PRINT ("eDP: OAddr:%d  Turnout Dir:%d  Output Power:%d", OutputAddress, direction, outputPower);
-                            if (notifyDccAccTurnoutOutput)
-                                notifyDccAccTurnoutOutput (OutputAddress, direction, outputPower);
-                        }
-                        else
-                        {
-                            DB_PRINT ("eDP: Turnout Pair Index:%d Dir:%d Output Power: ", TurnoutPairIndex, direction, outputPower);
-                            if (notifyDccAccTurnoutBoard)
-                                notifyDccAccTurnoutBoard (BoardAddress, TurnoutPairIndex, direction, outputPower);
-                        }
+                        DB_PRINT ("eDP: OAddr:%d  Turnout Dir:%d  Output Power:%d", OutputAddress, direction, outputPower);
+                        if (notifyDccAccTurnoutOutput)
+                            notifyDccAccTurnoutOutput (OutputAddress, direction, outputPower);
+                        DB_PRINT ("eDP: Turnout Pair Index:%d Dir:%d Output Power: ", TurnoutPairIndex, direction, outputPower);
+                        if (notifyDccAccTurnoutBoard)
+                            notifyDccAccTurnoutBoard (BoardAddress, TurnoutPairIndex, direction, outputPower);
                     }
                     else if (pDccMsg->Size == 6) // Accessory Decoder OPS Mode Programming
                     {
